@@ -25,10 +25,30 @@ trainset, validset = dataset.from_generator(
     shuffle=True,
     take=None
 )
+
+for x, y in trainset:
+    print(type(x), type(y))
+    print(x.shape, y.shape)
+    print(x.dtype, y.dtype)
+    do_something_with_batch_data(x, y)
 ~~~
+Expected outputs:
+~~~bash
+>>> <class 'tensorflow.python.framework.ops.EagerTensor'> <class 'tensorflow.python.framework.ops.EagerTensor'>
+>>> (32, 224, 224, 3) (32,)
+>>> <dtype: 'uint8'> <dtype: 'int32'>
+~~~
+The `dataset.from_generator()` function will return a tuple of 2 generators representing the **training** and 
+**validation** datasets respectively. 
+
+Usage of each generator is displayed above, notice that `y` values are label indices whose values are in [1, 1000],
+as defined by [ImageNet classes](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a).
 
 ### Looking up label
 
+Sometimes one needs to convert label indices to human-readable text or look up label indices from label synset 
+(which can often happen when dealing with ILSVRC training set), the package provides useful tools to implement
+such functionalities.
 ~~~python
 import imagenet.core as imagenet
 dataset = imagenet.ImageNet(dataset_dir='/path/to/your/ILSVRC2012-dataset')
