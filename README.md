@@ -50,9 +50,10 @@ Sometimes one needs to convert label indices to human-readable text or look up l
 (which can often happen when dealing with ILSVRC training set), the package provides useful tools to implement
 such functionalities.
 ~~~python
-import imagenet.core as imagenet
-dataset = imagenet.ImageNet(dataset_dir='/path/to/your/ILSVRC2012-dataset')
+import imagenet
 
+
+dataset = imagenet.ImageNet(dataset_dir='/path/to/your/ILSVRC2012-dataset')
 label_index = 100
 
 dataset.lookup[label_index]
