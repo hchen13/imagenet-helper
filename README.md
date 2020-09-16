@@ -14,7 +14,7 @@ python setup.py install
 
 ### Creating dataset generator
 ~~~python
-import imagenet.core as imagenet
+import imagenet
 
 dataset_dir = '/path/to/your/ILSVRC2012-dataset'
 dataset = imagenet.ImageNet(dataset_dir)
