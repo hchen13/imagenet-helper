@@ -68,6 +68,14 @@ class ImageNet:
         print(f"[ImageNet] {len(self._train_images)} training images and "
               f"{len(self._valid_images)} validation images detected.\n")
 
+    @property
+    def train_length(self):
+        return len(self._train_images)
+
+    @property
+    def validation_length(self):
+        return len(self._valid_images)
+
     def from_generator(self, image_size, batch_size, shuffle=False, take=None):
         """
         initialize dataset in the format of tf dataset in the generator fashion
