@@ -86,11 +86,9 @@ class ImageNet:
         :param take: int if debugging else None, outputs `take` number of batches of data
         :return: trainset and validset
         """
-        # train_gen = partial(self.train_generator, image_size=image_size, shuffle=shuffle)
-        train_gen = partial(self.train_generator, image_size=image_size)
+        train_gen = partial(self.train_generator, image_size=image_size, shuffle=shuffle)
+        # train_gen = partial(self.train_generator, image_size=image_size)
         trainset = tf.data.Dataset.from_generator(train_gen, (tf.uint8, tf.int32))
-        if shuffle:
-            trainset = trainset.shuffle(buffer_size=200)
         trainset = trainset.batch(batch_size)
 
         # valid_gen = partial(self.valid_generator, image_size=image_size, shuffle=shuffle)
