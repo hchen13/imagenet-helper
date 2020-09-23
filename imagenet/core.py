@@ -171,8 +171,10 @@ class ImageNet:
         random.shuffle(train_files)
         random.shuffle(valid_files)
         if chunk_size:
+            print(f"[ImageNet] creating tfrecords files in chunks so that each file will contain at most {chunk_size} images")
             chunk_id = 1
             for i in range(0, len(train_files), chunk_size):
+                print(f"\ttrain set chunk #{chunk_id}.\n")
                 filename = f'imagenet_{image_size}_train{chunk_id}.tfrecords'
                 image_list = train_files[i : i + chunk_size]
                 self._create_tfrecords(dir, filename, image_size, image_list)
@@ -180,13 +182,19 @@ class ImageNet:
 
             chunk_id = 1
             for i in range(0, len(valid_files), chunk_size):
+                print(f"\tvalid set chunk #{chunk_id}.\n")
                 filename = f'imagenet_{image_size}_valid{chunk_id}.tfrecords'
                 image_list = valid_files[i : i + chunk_size]
                 self._create_tfrecords(dir, filename, image_size, image_list)
                 chunk_id += 1
+            print("[ImageNet] creation complete.\n")
             return
+
+        print("[ImageNet] creating tfrecords file for training set...")
         self._create_tfrecords(dir, f'imagenet_{image_size}_train.tfrecords', image_size, train_files)
+        print("[ImageNet] creating tfrecords file for validation set...")
         self._create_tfrecords(dir, f'imagenet_{image_size}_valid.tfrecords', image_size, valid_files)
+        print("[ImageNet] creation complete!\n")
 
     def _create_tfrecords(self, record_dir, filename, image_size, image_files):
         os.makedirs(record_dir, exist_ok=True)
