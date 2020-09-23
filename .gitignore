@@ -3,3 +3,5 @@
 build/
 dist/
 *.egg-info/
+#playground.py
+__pycache__/

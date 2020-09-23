@@ -147,3 +147,11 @@ class ImageNet:
         else:
             raise ValueError(f"[ImageNet] Unusual path: {path}")
         return path, label_id, text
+
+    def create_tfrecords(self, dir, image_size, block_size=None):
+        filename_pattern = f'imagenet_{image_size}_{{}}.tfrecords'
+        if block_size:
+            for i in range(0, len(self._train_images), block_size):
+                print(i)
+
+
