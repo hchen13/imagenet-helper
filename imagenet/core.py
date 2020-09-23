@@ -187,6 +187,7 @@ class ImageNet:
         self._create_tfrecords(dir, f'imagenet_{image_size}_valid.tfrecords', image_size, valid_files)
 
     def _create_tfrecords(self, record_dir, filename, image_size, image_files):
+        os.makedirs(record_dir, exist_ok=True)
         path = os.path.join(record_dir, filename)
         with tf.io.TFRecordWriter(path) as writer:
             for path in tqdm(image_files):

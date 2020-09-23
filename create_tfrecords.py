@@ -14,13 +14,5 @@ if __name__ == '__main__':
 
     dataset = imagenet.ImageNet(p)
 
-    dataset.create_tfrecords(p, 192, 10)
+    dataset.create_tfrecords(os.path.join(p, 'tfrecords'), 192, 10)
 
-    # trainset, validset = dataset.from_tfrecords(batch_size=4)
-    # trainsize = 0
-    # validsize = 0
-    # for x, y in trainset:
-    #     trainsize += x.shape[0]
-    # for x, y in validset:
-    #     validsize += x.shape[0]
-    # print(trainsize, validsize)
