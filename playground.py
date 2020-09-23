@@ -1,3 +1,5 @@
+import os
+
 import imagenet
 
 if __name__ == '__main__':
