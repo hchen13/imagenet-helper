@@ -54,11 +54,13 @@ class ImageNet:
         print(f"[ImageNet] {len(self._train_images)} training and "
               f"{len(self._valid_images)} validation image files detected.\n")
 
-    def _scan_tfrecords(self):
+    def _scan_tfrecords(self, dir: str=None):
+        if dir is None:
+            dir = self.root_dir
         train_pattern = 'imagenet_*_train*.tfrecords'
         valid_pattern = 'imagenet_*_valid*.tfrecords'
-        self._train_records = glob(os.path.join(self.root_dir, train_pattern))
-        self._valid_records = glob(os.path.join(self.root_dir, valid_pattern))
+        self._train_records = glob(os.path.join(dir, train_pattern))
+        self._valid_records = glob(os.path.join(dir, valid_pattern))
         print(f"[ImageNet] {len(self._train_records)} training and "
               f"{len(self._valid_records)} validation tfrecords files detected.\n")
 
@@ -102,11 +104,9 @@ class ImageNet:
         :return: trainset and validset
         """
         train_gen = partial(self.train_generator, image_size=image_size, shuffle=shuffle)
-        # train_gen = partial(self.train_generator, image_size=image_size)
         trainset = tf.data.Dataset.from_generator(train_gen, (tf.uint8, tf.int32))
         trainset = trainset.batch(batch_size)
 
-        # valid_gen = partial(self.valid_generator, image_size=image_size, shuffle=shuffle)
         valid_gen = partial(self.valid_generator, image_size=image_size)
         validset = tf.data.Dataset.from_generator(valid_gen, (tf.uint8, tf.int32))
         validset = validset.batch(batch_size)
@@ -163,7 +163,9 @@ class ImageNet:
             raise ValueError(f"[ImageNet] Unusual path: {path}")
         return path, label_id, text
 
-    def create_tfrecords(self, dir: str, image_size: int, chunk_size: int=None):
+    def create_tfrecords(self, image_size: int, chunk_size: int=None, dir: str=None):
+        if dir is None:
+            dir = self.root_dir
         train_files = list(self._train_images)
         valid_files = list(self._valid_images)
         random.shuffle(train_files)
@@ -197,7 +199,9 @@ class ImageNet:
                 serialized = serialize_example(image, label_index)
                 writer.write(serialized)
 
-    def from_tfrecords(self, batch_size):
+    def from_tfrecords(self, batch_size: int, path: str=None):
+        if path is not None:
+            self._scan_tfrecords(path)
         trainset, validset = None, None
         if len(self._train_records):
             raw = tf.data.TFRecordDataset(self._train_records)
