@@ -6,6 +6,9 @@ from glob import glob
 import tensorflow as tf
 
 import cv2
+from tqdm import tqdm
+
+from imagenet.tfannotations import serialize_example, read_tfrecord
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -44,6 +47,21 @@ class ImageNet:
     max_label_index = 1000
     min_label_index = 1
 
+    def _scan_image_files(self):
+        self.train_dir = os.path.join(self.root_dir, 'train')
+        self.valid_dir = os.path.join(self.root_dir, 'valid')
+        self._train_images, self._valid_images = self._find_images()
+        print(f"[ImageNet] {len(self._train_images)} training and "
+              f"{len(self._valid_images)} validation image files detected.\n")
+
+    def _scan_tfrecords(self):
+        train_pattern = 'imagenet_*_train*.tfrecords'
+        valid_pattern = 'imagenet_*_valid*.tfrecords'
+        self._train_records = glob(os.path.join(self.root_dir, train_pattern))
+        self._valid_records = glob(os.path.join(self.root_dir, valid_pattern))
+        print(f"[ImageNet] {len(self._train_records)} training and "
+              f"{len(self._valid_records)} validation tfrecords files detected.\n")
+
     def __init__(self, dataset_dir):
         """
         initialize the ImageNet dataset configurations by specifying the training and validation set directories.
@@ -56,17 +74,14 @@ class ImageNet:
         :param dataset_dir: path to the root directory of the dataset, should contain
         `metadata`, `train`, and `valid` folders
         """
-        print("[ImageNet] initializing ImageNet dataset...")
+        print("[ImageNet] initializing ImageNet dataset...\n")
         metadata_dir = os.path.join(ROOT_DIR, 'metadata')
         self.valid_gt = json.load(open(os.path.join(metadata_dir, 'validation_ground_truths.json')))
         self.valid_blacklist = json.load(open(os.path.join(metadata_dir, 'validation_blacklist.json')))
-        self.train_dir = os.path.join(dataset_dir, 'train')
-        self.valid_dir = os.path.join(dataset_dir, 'valid')
         self.root_dir = dataset_dir
         self.lookup = Lookup()
-        self._train_images, self._valid_images = self._find_images()
-        print(f"[ImageNet] {len(self._train_images)} training images and "
-              f"{len(self._valid_images)} validation images detected.\n")
+        self._scan_image_files()
+        self._scan_tfrecords()
 
     @property
     def train_length(self):
@@ -148,10 +163,49 @@ class ImageNet:
             raise ValueError(f"[ImageNet] Unusual path: {path}")
         return path, label_id, text
 
-    def create_tfrecords(self, dir, image_size, block_size=None):
-        filename_pattern = f'imagenet_{image_size}_{{}}.tfrecords'
-        if block_size:
-            for i in range(0, len(self._train_images), block_size):
-                print(i)
+    def create_tfrecords(self, dir: str, image_size: int, chunk_size: int=None):
+        train_files = list(self._train_images)
+        valid_files = list(self._valid_images)
+        random.shuffle(train_files)
+        random.shuffle(valid_files)
+        if chunk_size:
+            chunk_id = 1
+            for i in range(0, len(train_files), chunk_size):
+                filename = f'imagenet_{image_size}_train{chunk_id}.tfrecords'
+                image_list = train_files[i : i + chunk_size]
+                self._create_tfrecords(dir, filename, image_size, image_list)
+                chunk_id += 1
 
+            chunk_id = 1
+            for i in range(0, len(valid_files), chunk_size):
+                filename = f'imagenet_{image_size}_valid{chunk_id}.tfrecords'
+                image_list = valid_files[i : i + chunk_size]
+                self._create_tfrecords(dir, filename, image_size, image_list)
+                chunk_id += 1
+            return
+        self._create_tfrecords(dir, f'imagenet_{image_size}_train.tfrecords', image_size, train_files)
+        self._create_tfrecords(dir, f'imagenet_{image_size}_valid.tfrecords', image_size, valid_files)
+
+    def _create_tfrecords(self, record_dir, filename, image_size, image_files):
+        path = os.path.join(record_dir, filename)
+        with tf.io.TFRecordWriter(path) as writer:
+            for path in tqdm(image_files):
+                image = cv2.imread(path)
+                image = cv2.resize(image, (image_size, image_size))
+                _, label_index, _ = self._parse_image_path(path)
+                serialized = serialize_example(image, label_index)
+                writer.write(serialized)
+
+    def from_tfrecords(self, batch_size):
+        trainset, validset = None, None
+        if len(self._train_records):
+            raw = tf.data.TFRecordDataset(self._train_records)
+            trainset = raw.map(read_tfrecord)
+            trainset = trainset.batch(batch_size)
+
+        if len(self._valid_records):
+            raw = tf.data.TFRecordDataset(self._valid_records)
+            validset = raw.map(read_tfrecord)
+            validset = validset.batch(batch_size)
+        return trainset, validset
 
