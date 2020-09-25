@@ -207,18 +207,21 @@ class ImageNet:
                 serialized = serialize_example(image, label_index)
                 writer.write(serialized)
 
-    def from_tfrecords(self, batch_size: int, path: str=None):
+    def from_tfrecords(self, batch_size: int=None, path: str=None):
         if path is not None:
             self._scan_tfrecords(path)
         trainset, validset = None, None
         if len(self._train_records):
             raw = tf.data.TFRecordDataset(self._train_records)
             trainset = raw.map(read_tfrecord)
-            trainset = trainset.batch(batch_size)
 
         if len(self._valid_records):
             raw = tf.data.TFRecordDataset(self._valid_records)
             validset = raw.map(read_tfrecord)
+
+        if batch_size is not None:
+            trainset = trainset.batch(batch_size)
             validset = validset.batch(batch_size)
+
         return trainset, validset
 
