@@ -64,7 +64,7 @@ class ImageNet:
         print(f"[ImageNet] {len(self._train_records)} training and "
               f"{len(self._valid_records)} validation tfrecords files detected.\n")
 
-    def __init__(self, dataset_dir):
+    def __init__(self, dataset_dir: str, lazy_load: bool=False):
         """
         initialize the ImageNet dataset configurations by specifying the training and validation set directories.
         Notice that training set images with the same class are placed in a secondary folders named by its synset;
@@ -82,8 +82,10 @@ class ImageNet:
         self.valid_blacklist = json.load(open(os.path.join(metadata_dir, 'validation_blacklist.json')))
         self.root_dir = dataset_dir
         self.lookup = Lookup()
-        self._scan_image_files()
-        self._scan_tfrecords()
+        self._lazy_load = lazy_load
+        if not lazy_load:
+            self._scan_image_files()
+            self._scan_tfrecords()
 
     @property
     def train_length(self):
@@ -103,6 +105,8 @@ class ImageNet:
         :param take: int if debugging else None, outputs `take` number of batches of data
         :return: trainset and validset
         """
+        if self._lazy_load:
+            self._scan_image_files()
         train_gen = partial(self.train_generator, image_size=image_size, shuffle=shuffle)
         trainset = tf.data.Dataset.from_generator(train_gen, (tf.uint8, tf.int32))
         trainset = trainset.batch(batch_size)
@@ -208,7 +212,7 @@ class ImageNet:
                 writer.write(serialized)
 
     def from_tfrecords(self, batch_size: int=None, path: str=None):
-        if path is not None:
+        if self._lazy_load:
             self._scan_tfrecords(path)
         trainset, validset = None, None
         if len(self._train_records):
